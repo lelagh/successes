@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Success Chance</title>
+    <style>
+    body {
+        font: 16px Arial, sans-serif;
+        padding: 1rem;
+    }
+
+    label {
+        display: grid;
+        grid-template-columns: 7rem 8rem;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    input {
+        box-sizing: border-box;
+        width: 8rem;
+        font: inherit;
+    }
+
+    output {
+        font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h3>Awake CE Rolls Probability</h3>
+  <label>
+    TN:
+    <input id="tn" type="number" min="1" step="1">
+  </label>
+
+  <label>
+    Dice:
+    <input id="dice" type="number" min="0" step="1">
+  </label>
+
+  <label>
+    Successes:
+    <input id="successes" type="number" min="0" step="1">
+  </label>
+
+  <p>Chance: <output id="chance">—</output></p>
+
+  <script>
+    const inputs = ["tn", "dice", "successes"]
+      .map(id => document.getElementById(id));
+    const chanceOutput = document.getElementById("chance");
+
+    function dieChanceForTarget(target) {
+      if (target <= 1) return 1;
+      if (target <= 6) return (7 - target) / 6;
+      return dieChanceForTarget(target - 6) / 6;
+    }
+
+    function update() {
+      const [tn, dice, successes] = inputs.map(input => input.valueAsNumber);
+
+      if (
+        inputs.some(input => input.value === "") ||
+        ![tn, dice, successes].every(Number.isInteger) ||
+        tn < 1 || dice < 0 || successes < 0
+      ) {
+        chanceOutput.textContent = "—";
+        return;
+      }
+
+      const dieChance = dieChanceForTarget(tn);
+      const probabilities = Array(dice + 1).fill(0);
+      probabilities[0] = 1;
+
+      for (let i = 0; i < dice; i++) {
+        for (let j = i + 1; j >= 0; j--) {
+          probabilities[j] =
+            (probabilities[j] || 0) * (1 - dieChance) +
+            (j > 0 ? probabilities[j - 1] * dieChance : 0);
+        }
+      }
+
+      const result = successes > dice
+        ? 0
+        : probabilities.slice(successes).reduce((sum, p) => sum + p, 0);
+
+      chanceOutput.textContent = `${(result * 100).toFixed(2)}%`;
+    }
+
+    inputs.forEach(input => input.addEventListener("input", update));
+  </script>
+</body>
+</html>
